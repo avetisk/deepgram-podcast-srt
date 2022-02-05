@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-require("dotenv").config()
+const { resolve } = require("path")
+require("dotenv").config({ path: resolve(__dirname, ".env") })
 const fs = require("fs")
 const { Deepgram } = require("@deepgram/sdk")
-const { resolve } = require("path")
 const deepgram = new Deepgram(process.env.DEEPGRAM_API_KEY)
 
 const OUT_DIR = resolve(process.cwd(), "output")
@@ -30,16 +30,13 @@ Promise.allSettled(
         { url },
         { punctuate: true, utterances: true, model: "general", language: "fr" }
       )
-      .then(
-        (response) =>
-          new Promise((resolve) => {
-            const stream = fs.createWriteStream(
-              url.replace(/.*\/([^/]+\.\w+)$/, `${OUT_DIR}/$1.str`),
-              { flags: "w" }
-            )
-            stream.write(response.toSRT())
-          })
-      )
+      .then((response) => {
+        const stream = fs.createWriteStream(
+          url.replace(/.*\/([^/]+\.\w+)$/, `${OUT_DIR}/$1.str`),
+          { flags: "w" }
+        )
+        stream.write(response.toSRT())
+      })
 
       .catch((error) => console.error({ error }))
   )
