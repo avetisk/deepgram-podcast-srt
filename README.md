@@ -7,8 +7,14 @@ A quick & dirty script for getting srt files from podcasts (https://podcast.desi
 ```sh
 git clone https://github.com/avetisk/deepgram-podcast-srt
 cd deepgram-podcast-srt
-npm link
+npm link # or sudo npm link if EACCES error
 echo 'DEEPGRAM_API_KEY=REPLACE_WITH_YOUR_DEEPGRAM_API_KEY' > .env
+```
+
+## Update
+```sh
+git pull
+npm install
 ```
 
 ## Usage
