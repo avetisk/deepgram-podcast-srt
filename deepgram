@@ -1,0 +1,46 @@
+#!/usr/bin/env node
+require("dotenv").config()
+const fs = require("fs")
+const { Deepgram } = require("@deepgram/sdk")
+const { resolve } = require("path")
+const deepgram = new Deepgram(process.env.DEEPGRAM_API_KEY)
+
+const OUT_DIR = resolve(process.cwd(), "output")
+
+try {
+  fs.mkdirSync(OUT_DIR)
+} catch (err) {
+  if (!err.message.startsWith("EEXIST:")) {
+    console.error(err)
+    process.exit(1)
+  }
+}
+
+const urls = process.argv.slice(2)
+
+if (!urls.length) {
+  console.error("No URL was provided.")
+  process.exit(2)
+}
+
+Promise.allSettled(
+  urls.map((url) =>
+    deepgram.transcription
+      .preRecorded(
+        { url },
+        { punctuate: true, utterances: true, model: "general", language: "fr" }
+      )
+      .then(
+        (response) =>
+          new Promise((resolve) => {
+            const stream = fs.createWriteStream(
+              url.replace(/.*\/([^/]+\.\w+)$/, `${OUT_DIR}/$1.str`),
+              { flags: "w" }
+            )
+            stream.write(response.toSRT())
+          })
+      )
+
+      .catch((error) => console.error({ error }))
+  )
+)
