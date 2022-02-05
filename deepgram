@@ -28,7 +28,13 @@ Promise.allSettled(
   urls.map(async (url) => {
     const response = await deepgram.transcription.preRecorded(
       { url },
-      { punctuate: true, utterances: true, model: "general", language: "fr" }
+      {
+        punctuate: true,
+        utterances: true,
+        diarize: true,
+        model: "general",
+        language: "fr",
+      }
     )
     const filename = url.replace(/.*\/([^/]+\.\w+)$/, `${OUT_DIR}/$1`)
 
