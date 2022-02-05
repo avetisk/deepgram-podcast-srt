@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 const { resolve } = require("path")
 require("dotenv").config({ path: resolve(__dirname, ".env") })
-const fs = require("fs")
+const { mkdirSync } = require("fs")
+const { writeFile } = require("fs/promises")
 const { Deepgram } = require("@deepgram/sdk")
 const deepgram = new Deepgram(process.env.DEEPGRAM_API_KEY)
 
 const OUT_DIR = resolve(process.cwd(), "output")
 
 try {
-  fs.mkdirSync(OUT_DIR)
+  mkdirSync(OUT_DIR)
 } catch (err) {
   if (!err.message.startsWith("EEXIST:")) {
     console.error(err)
@@ -24,20 +25,27 @@ if (!urls.length) {
 }
 
 Promise.allSettled(
-  urls.map((url) =>
-    deepgram.transcription
-      .preRecorded(
-        { url },
-        { punctuate: true, utterances: true, model: "general", language: "fr" }
-      )
-      .then((response) => {
-        const stream = fs.createWriteStream(
-          url.replace(/.*\/([^/]+\.\w+)$/, `${OUT_DIR}/$1.str`),
-          { flags: "w" }
-        )
-        stream.write(response.toSRT())
-      })
+  urls.map(async (url) => {
+    const response = await deepgram.transcription.preRecorded(
+      { url },
+      { punctuate: true, utterances: true, model: "general", language: "fr" }
+    )
+    const filename = url.replace(/.*\/([^/]+\.\w+)$/, `${OUT_DIR}/$1`)
 
-      .catch((error) => console.error({ error }))
-  )
+    try {
+      await writeFile(`${filename}.json`, JSON.stringify(response.results), {
+        flag: "w",
+      })
+      await writeFile(
+        `${filename}.txt`,
+        response.results.channels[0].alternatives[0].transcript,
+        { flag: "w" }
+      )
+      await writeFile(`${filename}.srt`, response.toSRT(), {
+        flag: "w",
+      })
+    } catch (err) {
+      console.error(err)
+    }
+  })
 )
